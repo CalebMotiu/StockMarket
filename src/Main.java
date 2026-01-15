@@ -1,74 +1,46 @@
-
-import Assets.*;
-import Market.*;
-import User.*;
-import commands.CommandHandler;
-import Strategy.*;
+import Assets.ListOfStocks;
+import Assets.ObservableAsset;
+import Mediator.ConcreteMarketMediator;
+import Strategy.DayTradingStrategy;
+import User.User;
+import Assets.Asset;
 
 public class Main {
     public static void main(String[] args) {
-        // --- Step 1: Create stocks and crypto ---
-        AssetsFactory stockFactory = new CreateStock();
-        AssetsFactory cryptoFactory = new CreateCrypto();
+        Asset apple = new ObservableAsset("Apple Inc.", "AAPL", 150.0);
+        Asset tesla = new ObservableAsset("Tesla Inc.", "TSLA", 700.0);
+        Asset bitcoin = new ObservableAsset("Bitcoin", "BTC", 30000.0);
 
-        Asset apple = stockFactory.createAsset("Apple Inc.", "AAPL", 150.0);
-        Asset tesla = stockFactory.createAsset("Tesla Inc.", "TSLA", 700.0);
-        Asset bitcoin = cryptoFactory.createAsset("Bitcoin", "BTC", 30000.0);
-
-        // --- Step 2: Add assets to ListOfStocks (market inventory) ---
         ListOfStocks market = ListOfStocks.getInstance();
         market.addStock(apple, 100);
         market.addStock(tesla, 50);
         market.addStock(bitcoin, 10);
 
-        System.out.println("=== Available Stocks in Market ===");
-        market.displayStocks();
+        User user1 = new User("JohnDoe");
+        User user2 = new User("JaneDoe");
 
-        // --- Step 3: Create a user ---
-        User user = new User("JohnDoe");
+        ((ObservableAsset)apple).attach(user1);
+        ((ObservableAsset)tesla).attach(user1);
+        ((ObservableAsset)bitcoin).attach(user1);
 
-        // --- Step 4: Set trading strategy ---
-        // Example: Day trading strategy
-        user.setStrategy(new DayTradingStrategy());
+        ConcreteMarketMediator mediator = new ConcreteMarketMediator();
+        TradingFacade facade = new TradingFacade();
 
-        // --- Step 5: User buys stocks ---
+        user1.setStrategy(new DayTradingStrategy());
+
         System.out.println("\n--- User buys 5 AAPL ---");
-        CommandHandler.buy(user, apple, 5);
+        facade.buyAsset(user1, apple, 5);
 
-        System.out.println("\n--- User buys 2 TSLA ---");
-        CommandHandler.buy(user, tesla, 2);
-
-        System.out.println("\n--- User tries to buy 1 BTC (crypto) using day trading ---");
-        CommandHandler.buy(user, bitcoin, 1); // Should fail because DayTradingStrategy only allows stocks
-
-        // --- Step 6: Show updated portfolio and market ---
-        System.out.println("\n=== User Portfolio ===");
-        user.getPortfolio().print();
-
-        System.out.println("\n=== Available Stocks in Market After Buying ===");
-        market.displayStocks();
-
-        // --- Step 7: User sells a stock ---
         System.out.println("\n--- User sells 2 AAPL ---");
-        CommandHandler.sell(user, apple, 2);
+        facade.sellAsset(user1, apple, 2);
 
-        System.out.println("\n=== User Portfolio After Selling ===");
-        user.getPortfolio().print();
+        System.out.println("\n--- Transactions ---");
+        user1.printTransactions();
 
-        System.out.println("\n=== Available Stocks in Market After Selling ===");
-        market.displayStocks();
+        System.out.println("\n--- Update stock price to trigger notification ---");
+        apple.setPrice(155.0);
 
-        // --- Step 8: Switch strategy to LongTermStrategy ---
-        System.out.println("\n--- Switching user strategy to Long-Term Strategy ---");
-        user.setStrategy(new LongTermStrategy());
-
-        System.out.println("\n--- User buys 3 TSLA using Long-Term Strategy ---");
-        CommandHandler.buy(user, tesla, 3);
-
-        System.out.println("\n=== Final User Portfolio ===");
-        user.getPortfolio().print();
-
-        System.out.println("\n=== Final Available Stocks in Market ===");
+        System.out.println("\n--- Final Market ---");
         market.displayStocks();
     }
 }
